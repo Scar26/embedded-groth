@@ -2,10 +2,6 @@
 
 use pairing::Engine;
 
-mod prover;
-
-pub use prover::*;
-
 #[derive(Clone, Debug)]
 pub struct Proof<E: Engine> {
     pub a: E::G1Affine,
@@ -53,7 +49,7 @@ pub struct Parameters<E: Engine, const P: usize, const A: usize, const M: usize>
 }
 
 #[cfg(feature = "std")]
-mod assignments {
+pub mod assignments {
     use bellman::{ConstraintSystem, LinearCombination, SynthesisError, Variable, Index};
     use pairing::group::ff::PrimeField;
 
@@ -71,8 +67,22 @@ mod assignments {
             self.aux_assignment.len()
         }
 
-        pub fn get_assignments(self) -> (Vec<S>, Vec<S>) {
-            (self.input_assignment, self.aux_assignment)
+        pub fn to_bytes(&self) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
+            let input_assignments = self.input_assignment.iter()
+                .map(|s| s.to_repr().as_ref().to_owned())
+                .collect();
+            
+            let aux_assignments = self.aux_assignment.iter()
+                .map(|s| s.to_repr().as_ref().to_owned())
+                .collect();
+            
+            (input_assignments, aux_assignments)
+        }
+
+        pub fn from_bytes(_: Vec<Vec<u8>>, _: Vec<Vec<u8>>) -> Self {
+            // [`PrimeField::from_repr`] does not allow conversion from &[u8] slices
+            // Deserialization is Engine dependent
+            unimplemented!()
         }
     }
 
