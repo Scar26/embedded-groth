@@ -52,24 +52,49 @@ pub struct Test<const P: usize, const A: usize, const M: usize> {
 
 #[cfg(feature = "std")]
 pub mod assignments {
-    use bellman::{ConstraintSystem, LinearCombination, SynthesisError, Variable, Index};
-    use pairing::group::ff::PrimeField;
+    use bellman::{ConstraintSystem, LinearCombination, SynthesisError, Variable, Index, Circuit};
+    use pairing::group::ff::{ Field, PrimeField };
+    use super::*;
 
-    #[derive(Default)]
+    #[derive(Default, Debug)]
     pub struct ExtractAssignments<S: PrimeField> {
         input_assignment:  Vec<S>,
+        num_inputs: usize,
         aux_assignment: Vec<S>,
-        a_assignments: Vec<usize>,
-        b_assignments: Vec<usize>
+        num_aux: usize,
+        a_constraints: Vec<Index>,
+        b_constraints: Vec<Index>,
     }
 
     impl<S: PrimeField> ExtractAssignments<S> {
-        pub fn get_input_count(&self) -> usize {
-            self.input_assignment.len()
+        pub fn get_assignments(&self) -> (Vec<S>, Vec<S>) {
+            (self.input_assignment.clone(), self.aux_assignment.clone())
         }
 
-        pub fn get_aux_count(&self) -> usize {
-            self.aux_assignment.len()
+        pub fn get_constraints(&self) -> (Vec<bool>, Vec<bool>) {
+            fn eval(input: Vec<Index>, p: usize, a: usize) -> Vec<bool> {
+                let mut out = vec![false; p+a];
+                
+                for idx in input {
+                    match idx {
+                        Index::Input(i) => {
+                            out[i] = true;
+                        }
+
+                        Index::Aux(i) => {
+                            out[p+i] = true;
+                        }
+                    }
+                }
+                out
+            }
+
+            let mut a_constraints = eval(self.a_constraints.clone(), self.num_inputs, self.num_aux);
+            for i in 0..self.num_inputs {
+                a_constraints[i] = true;
+            }
+            
+            (a_constraints, eval(self.b_constraints.clone(),self.num_inputs, self.num_aux))
         }
 
         pub fn to_bytes(&self) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
@@ -101,7 +126,8 @@ pub mod assignments {
             AR: Into<String>,
         {
             self.aux_assignment.push(f()?);
-            Ok(Variable::new_unchecked(Index::Aux(self.get_aux_count() - 1)))
+            self.num_aux += 1;
+            Ok(Variable::new_unchecked(Index::Aux(self.num_aux - 1)))
         }
 
         fn alloc_input<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
@@ -111,7 +137,8 @@ pub mod assignments {
             AR: Into<String>,
         {
             self.input_assignment.push(f()?);
-            Ok(Variable::new_unchecked(Index::Aux(self.get_input_count() - 1)))
+            self.num_inputs += 1;
+            Ok(Variable::new_unchecked(Index::Aux(self.num_inputs - 1)))
         }
 
         fn enforce<A, AR, LA, LB, LC>(&mut self, _: A, a: LA, b: LB, _: LC)
@@ -122,18 +149,17 @@ pub mod assignments {
                 LB: FnOnce(LinearCombination<S>) -> LinearCombination<S>,
                 LC: FnOnce(LinearCombination<S>) -> LinearCombination<S>,
         {
-            let a = a(LinearCombination::zero()).as_ref();
-            for (var, _) in a {
-                match var {
-                    Variable(Index::Input(p)) => {
-                        unreachable!()
-                    }
-
-                    Variable(Index::Aux(u)) => {
-
-                    }
+            fn eval<S: PrimeField>(
+                lc: LinearCombination<S>,
+                output: &mut Vec<Index>
+            ) {
+                for (var, _) in lc.as_ref() {
+                    output.push(var.get_unchecked());
                 }
             }
+            
+            eval(a(LinearCombination::zero()), &mut self.a_constraints);
+            eval(b(LinearCombination::zero()), &mut self.b_constraints);
         }
 
         fn push_namespace<NR, N>(&mut self, _: N)
@@ -151,5 +177,16 @@ pub mod assignments {
         fn get_root(&mut self) -> &mut Self::Root {
             self
         }        
+    }
+
+    pub fn extract_assignments<C, E>(circuit: C) -> Result<ExtractAssignments<E::Fr>, SynthesisError>
+    where
+        E: Engine,
+        C: Circuit<E::Fr>
+    {
+        let mut cs = ExtractAssignments::<E::Fr>::default();
+        cs.alloc_input(|| "one", || Ok(E::Fr::one()))?;
+        circuit.synthesize(&mut cs)?;
+        Ok(cs)
     }
 }

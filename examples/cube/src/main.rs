@@ -36,6 +36,7 @@ use self::bellman::groth16::{
 
 // proving that I know x such that x^3 + x + 5 == 35
 // Generalized: x^3 + x + 5 == out
+#[derive(Clone, Copy)]
 pub struct CubeDemo<S: PrimeField> {
     pub x: Option<S>,
 }
@@ -129,7 +130,6 @@ impl <S: PrimeField> Circuit<S> for CubeDemo<S> {
 fn main(){
     // This may not be cryptographically safe, use
     // `OsRng` (for example) in production software.
-    let _  = assignments::ExtractAssignments{vec![], vec![]};
     let rng = &mut thread_rng();
     
     println!("Creating parameters...");
@@ -153,7 +153,9 @@ fn main(){
     let c = CubeDemo::<Scalar> {
         x: Scalar::from_str_vartime("3")
     };
-    
+
+    let assignments = assignments::extract_assignments::<CubeDemo<Scalar>, Bls12>(c).unwrap();
+    println!("{:?}", assignments.get_constraints());
     // Create a groth16 proof with our parameters.
     let proof = create_random_proof(c, &params, rng).unwrap();
         
