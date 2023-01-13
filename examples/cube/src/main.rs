@@ -41,13 +41,6 @@ pub struct CubeDemo<S: PrimeField> {
     pub x: Option<S>,
 }
 
-// Algorithm
-// proof = proof_generate(params, inputs) 
-// 
-// 
-//
-//
-
 impl <S: PrimeField> Circuit<S> for CubeDemo<S> {
     fn synthesize<CS: ConstraintSystem<S>>(
         self, 
@@ -143,7 +136,7 @@ fn main(){
         generate_random_parameters::<Bls12, _, _>(c, rng).unwrap()
     };
 
-    println!("params 1: {}, {}, {}, {}, {}", params.l[0], params.h.len(), params.a.len(), params.b_g1.len(), params.b_g2.len());
+    println!("params 1: {}, {}, {}, {}, {}", params.l.len(), params.h.len(), params.a.len(), params.b_g1.len(), params.b_g2.len());
     // Prepare the verification key (for proof verification)
     let pvk = prepare_verifying_key(&params.vk);
 

@@ -1,7 +1,15 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(any(test, feature = "std")), no_std)]
+
+#[cfg(not(any(test, feature = "std")))]
+extern crate alloc;
+
+#[cfg(test)]
+#[macro_use]
+extern crate std;
 
 use pairing::Engine;
 
+// pub mod prover;
 #[derive(Clone, Debug)]
 pub struct Proof<E: Engine> {
     pub a: E::G1Affine,
@@ -50,7 +58,7 @@ pub struct Test<const P: usize, const A: usize, const M: usize> {
     pub b_g2: [usize; M],
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(test, feature = "std"))]
 pub mod assignments {
     use bellman::{ConstraintSystem, LinearCombination, SynthesisError, Variable, Index, Circuit};
     use pairing::group::ff::{ Field, PrimeField };
@@ -87,14 +95,9 @@ pub mod assignments {
                     }
                 }
                 out
-            }
-
-            let mut a_constraints = eval(self.a_constraints.clone(), self.num_inputs, self.num_aux);
-            for i in 0..self.num_inputs {
-                a_constraints[i] = true;
-            }
+            }  
             
-            (a_constraints, eval(self.b_constraints.clone(),self.num_inputs, self.num_aux))
+            (eval(self.a_constraints.clone(), self.num_inputs, self.num_aux), eval(self.b_constraints.clone(),self.num_inputs, self.num_aux))
         }
 
         pub fn to_bytes(&self) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
@@ -187,6 +190,23 @@ pub mod assignments {
         let mut cs = ExtractAssignments::<E::Fr>::default();
         cs.alloc_input(|| "one", || Ok(E::Fr::one()))?;
         circuit.synthesize(&mut cs)?;
+        for i in 0..cs.num_inputs {
+            cs.enforce(|| "", |lc| lc + Variable::new_unchecked(Index::Input(i)), |lc| lc, |lc| lc);
+        }
         Ok(cs)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::assignments;
+    use std::mem;
+    use bls12_381::{ Scalar };
+
+    #[test]
+    fn test() {
+        let a = assignments::ExtractAssignments::<Scalar>::default();
+        println!("{}", mem::size_of_val(&a));
     }
 }
