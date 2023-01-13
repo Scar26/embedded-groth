@@ -2,6 +2,8 @@
 
 #[cfg(not(any(test, feature = "std")))]
 extern crate alloc;
+#[cfg(not(any(test, feature = "std")))]
+use alloc::vec::Vec;
 
 #[cfg(test)]
 #[macro_use]
@@ -17,7 +19,7 @@ pub struct Proof<E: Engine> {
     pub c: E::G1Affine,
 }
 #[derive(Clone)]
-pub struct VerificationKey<'a, E: Engine> {
+pub struct VerificationKey<E: Engine> {
     pub alpha_g1: E::G1Affine,
 
     pub beta_g1: E::G1Affine,
@@ -30,25 +32,25 @@ pub struct VerificationKey<'a, E: Engine> {
 
     // LP_i = [(beta * A_i(tau) + alpha * B_i(tau) + C_i(tau))/gamma]*G_1
     // for all public inputs.
-    pub ic: &'a [E::G1Affine]
+    pub ic: Vec<E::G1Affine>
 }
 
 #[derive(Clone)]
-pub struct Parameters<'a, 'b, E: Engine> {
-    pub vk: VerificationKey<'b, E>,
+pub struct Parameters<E: Engine> {
+    pub vk: VerificationKey<E>,
 
     // H query
     // h_i = (tau^i*Z_x(tau)/delta)*G1
-    pub h: &'a [E::G1Affine],
+    pub h: Vec<E::G1Affine>,
 
     // L query
     // l_i = (L_i(tau)/delta)*G1
-    pub l: &'a [E::G1Affine],
+    pub l: Vec<E::G1Affine>,
 
-    pub a:  &'a [E::G1Affine],
+    pub a:  Vec<E::G1Affine>,
     
-    pub b_g1: &'a [E::G1Affine],
-    pub b_g2: &'a [E::G2Affine],
+    pub b_g1: Vec<E::G1Affine>,
+    pub b_g2: Vec<E::G2Affine>,
 }
 
 pub struct Test<const P: usize, const A: usize, const M: usize> {
