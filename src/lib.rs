@@ -195,6 +195,7 @@ pub mod assignments {
             
             eval(a(LinearCombination::zero()), &mut self.at, self.num_constraints);
             eval(b(LinearCombination::zero()), &mut self.bt, self.num_constraints);
+            eval(c(LinearCombination::zero()), &mut self.ct, self.num_constraints);
             self.num_constraints += 1;
         }
 
@@ -257,12 +258,17 @@ pub mod assignments {
 #[cfg(test)]
 mod tests {
     use super::assignments;
-    use std::mem;
-    use bls12_381::{ Scalar };
+    use bls12_381::{ Scalar as BlsScalar };
+
+    // #[test]
+    // fn test() {
+    //     let a = assignments::AnalyzeCircuit::<Scalar>::default();
+    //     println!("{}", mem::size_of_val(&a));
+    // }
 
     #[test]
-    fn test() {
-        let a = assignments::AnalyzeCircuit::<Scalar>::default();
-        println!("{}", mem::size_of_val(&a));
+    fn qap_extraction() {
+        let a = assignments::AnalyzeCircuit::<BlsScalar>::default();
+
     }
 }

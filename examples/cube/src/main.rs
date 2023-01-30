@@ -38,7 +38,7 @@ pub struct CubeDemo<S: PrimeField> {
     pub x: Option<S>,
 }
 
-impl <S: PrimeField> Circuit<S> for CubeDemo<S> {
+impl<S: PrimeField> Circuit<S> for CubeDemo<S> {
     fn synthesize<CS: ConstraintSystem<S>>(
         self, 
         cs: &mut CS
@@ -145,7 +145,19 @@ fn main(){
     };
 
     let assignments = assignments::extract_assignments::<CubeDemo<Scalar>, Bls12>(c).unwrap();
-    println!("{:?}", assignments.get_constraints());
+    let cap = assignments.qap();
+
+    for (i, p) in cap.a.iter() {
+        println!("{} {:?}", i, p);
+    }
+
+    for (i, p) in cap.b.iter() {
+        println!("{} {:?}", i, p);
+    }
+
+    for (i, p) in cap.c.iter() {
+        println!("{} {:?}", i, p);
+    }
     // Create a groth16 proof with our parameters.
     let proof = create_random_proof(c, &params, rng).unwrap();
         

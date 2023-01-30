@@ -22,9 +22,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "bellman"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4dd656ef4fdf7debb6d87d4dd92642fcbcdb78cbf6600c13e25c87e4d1a3807"
+version = "0.13.0"
 dependencies = [
  "bitvec",
  "blake2s_simd",
@@ -189,6 +187,7 @@ name = "groth16"
 version = "0.1.0"
 dependencies = [
  "bellman",
+ "ff",
  "pairing",
  "rand_core",
 ]
