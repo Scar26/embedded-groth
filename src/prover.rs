@@ -2,7 +2,7 @@ use core::ops::AddAssign;
 
 use pairing::Engine;
 use pairing::group::{ GroupOps, GroupOpsOwned };
-use crate::{ Proof, Parameters, fft };
+use crate::{ Proof, Parameters, poly };
 
 #[cfg(not(any(test, feature = "std")))]
 use alloc::vec::Vec;

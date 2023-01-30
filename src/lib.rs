@@ -18,7 +18,7 @@ pub enum VerificationError {
 
 pub mod prover;
 pub mod verifier;
-mod fft;
+mod poly;
 #[derive(Clone, Debug)]
 pub struct Proof<E: Engine> {
     pub a: E::G1Affine,
