@@ -1,4 +1,6 @@
 use ff::PrimeField;
+#[cfg(not(any(test, feature = "std")))]
+use alloc::vec::Vec;
 
 pub fn fft_params<S: PrimeField>(l: usize) -> (S, usize, u32) {
     let mut m = 1;
@@ -68,8 +70,32 @@ pub fn ifft<S: PrimeField>(a: &mut [S], omega: &S, exp: u32) {
     }
 }
 
+// First argument is modified in place to the multiplication result
+// Second argument is modified in place to the evaluation domain
+pub fn multiply_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>) {
+    let (omega, m, exp): (S, usize, u32) = fft_params(a.len() + b.len());
+    a.resize(m, S::zero());
+    b.resize(m, S::zero());
+    fft(a.as_mut_slice(), &omega, exp);
+    fft(b.as_mut_slice(), &omega, exp);
+
+    for (x, y) in a.iter_mut().zip(b.iter()) {
+        x.mul_assign(y);
+    }
+}
+
+// First argument is modified in place to the addition result
+pub fn add_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &Vec<S>) {
+    assert_eq!(a.len(), b.len());
+    for (x, y) in a.iter_mut().zip(b.iter()) {
+        x.add_assign(y);
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use core::ops::{AddAssign, MulAssign};
+
     use bls12_381::{ Scalar as BlsScalar};
     use rand::thread_rng;
     use ff::Field;
@@ -96,14 +122,40 @@ mod tests {
         let (omega, m, exp): (BlsScalar, usize, u32) = fft_params(a.len());
         fft(a2.as_mut_slice(), &omega, exp);
 
+        // FFT outputs match up with the bellman evaluation domain
         assert_eq!(x, a2);
 
         // inverse fft
         domain.ifft(&worker);
         ifft(a2.as_mut_slice(), &omega, exp);
-
         x = domain.as_ref().iter().map(|t| t.0).collect();
+
+        // iFFT outputs match up with the bellman evaluation domain
         assert_eq!(x, a2);
+
+        // FFT i-FFT cancel out
         assert_eq!(avals, a2);
+    }
+
+    #[test]
+    fn polynomial_arithmetic() {
+        let mut rng = thread_rng();
+        let mut a: Vec<BlsScalar> = (0..32).map(|_| BlsScalar::random(&mut rng)).collect();
+        let mut b: Vec<BlsScalar> = (0..32).map(|_| BlsScalar::random(&mut rng)).collect();
+
+        let mut naive = vec![BlsScalar::zero(); 64];
+        for (i, x) in a.iter().enumerate() {
+            for (j, y) in b.iter().enumerate() {
+                let mut prod = x.clone();
+                prod.mul_assign(y);
+                naive[i+j].add_assign(prod)
+            }
+        }
+
+        multiply_coefficient_domain(&mut a, &mut b);
+        let (omega, _, exp): (BlsScalar, usize, u32) = fft_params(a.len());
+        ifft(&mut a, &omega, exp);
+
+        assert_eq!(naive, a);
     }
 }
