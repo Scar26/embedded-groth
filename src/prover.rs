@@ -1,11 +1,10 @@
 use core::ops::AddAssign;
 
 use pairing::Engine;
-use pairing::group::prime::PrimeCurveAffine;
 use pairing::group::{ GroupOps, GroupOpsOwned };
-use crate::{ Proof, Parameters };
+use crate::{ Proof, Parameters, fft };
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(any(test, feature = "std")))]
 use alloc::vec::Vec;
 
 pub fn create_proof<E: Engine>(

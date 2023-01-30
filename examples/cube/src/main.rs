@@ -1,17 +1,14 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
-extern crate bellman;
-extern crate pairing;
-extern crate rand;
-extern crate ff;
+use bellman;
 
 // For randomness (during paramgen and proof generation)
-use self::rand::{thread_rng, Rng};
+use rand::{thread_rng, Rng};
 use groth16::assignments;
 
 
 // Bring in some tools for using pairing-friendly curves
-use self::pairing::Engine;
+use pairing::Engine;
 
 use ff::PrimeField;
 

@@ -11,7 +11,14 @@ extern crate std;
 
 use pairing::Engine;
 
-// pub mod prover;
+pub enum VerificationError {
+    InvalidProof,
+    InvalidVerifyingKey,
+}
+
+pub mod prover;
+pub mod verifier;
+mod fft;
 #[derive(Clone, Debug)]
 pub struct Proof<E: Engine> {
     pub a: E::G1Affine,
@@ -77,6 +84,10 @@ pub mod assignments {
     }
 
     impl<S: PrimeField> ExtractAssignments<S> {
+        pub fn get_num_states(&self) -> (usize, usize) {
+            (self.num_inputs, self.num_aux)
+        }
+
         pub fn get_assignments(&self) -> (Vec<S>, Vec<S>) {
             (self.input_assignment.clone(), self.aux_assignment.clone())
         }
