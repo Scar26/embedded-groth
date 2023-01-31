@@ -4,7 +4,7 @@ use bellman;
 
 // For randomness (during paramgen and proof generation)
 use rand::{thread_rng, Rng};
-use groth16::{ prover, assignments, Parameters as GrothParams };
+use groth16::{ prover, assignments, Parameters as GrothParams, VerificationKey as GrothVk };
 use std::sync::Arc;
 
 // Bring in some tools for using pairing-friendly curves
@@ -27,7 +27,7 @@ use self::bellman::groth16::{
     Proof,
     generate_random_parameters,
     prepare_verifying_key,
-    create_random_proof,
+    create_proof,
     verify_proof,
 };
 
@@ -151,17 +151,69 @@ fn main(){
     let r = Scalar::random(&mut rng);
     let s = Scalar::random(&mut rng);
 
-    let _bellproof = create_random_proof(c, &params, &mut rng).unwrap();
-    let p =  {
+    let bellproof = create_proof(c, &params, r.clone(), s.clone()).unwrap();
+    println!("bellman proof: {:?}", bellproof);
+
+    let h =  {
         if let Ok(p) = Arc::try_unwrap(params.h) {
             p
         } else {
             unreachable!()
         }
     };
-    let h: <Bls12 as Engine>::G1 = prover::create_proof::<Bls12>(p, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
-    let t: <Bls12 as Engine>::G1Affine = h.into();
-    println!("groth16 h: {:?}", t);
+
+    let l =  {
+        if let Ok(p) = Arc::try_unwrap(params.l) {
+            p
+        } else {
+            unreachable!()
+        }
+    };
+
+    let a_g1 =  {
+        if let Ok(p) = Arc::try_unwrap(params.a) {
+            p
+        } else {
+            unreachable!()
+        }
+    };
+
+    let b_g1 =  {
+        if let Ok(p) = Arc::try_unwrap(params.b_g1) {
+            p
+        } else {
+            unreachable!()
+        }
+    };
+
+    let b_g2 =  {
+        if let Ok(p) = Arc::try_unwrap(params.b_g2) {
+            p
+        } else {
+            unreachable!()
+        }
+    };
+
+    let grothparams = GrothParams{
+        vk: GrothVk {
+            alpha_g1: params.vk.alpha_g1,
+            beta_g1: params.vk.beta_g1,
+            beta_g2: params.vk.beta_g2,
+            gamma_g2: params.vk.gamma_g2,
+            delta_g1: params.vk.delta_g1,
+            delta_g2: params.vk.delta_g2,
+            ic: params.vk.ic.clone(),
+        },
+        h,
+        l,
+        a_g1,
+        b_g1,
+        b_g2,
+    };
+
+    let h = prover::create_proof::<Bls12>(grothparams, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
+    // let t: <Bls12 as Engine>::G1Affine = h.into();
+    // println!("groth16 h: {:?}", t);
     // for (i, p) in cap.a.iter() {
     //     println!("{} {:?}", i, p);
     // }

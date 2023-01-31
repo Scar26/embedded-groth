@@ -53,7 +53,7 @@ pub struct Parameters<E: Engine> {
     // l_i = (L_i(tau)/delta)*G1
     pub l: Vec<E::G1Affine>,
 
-    pub a:  Vec<E::G1Affine>,
+    pub a_g1:  Vec<E::G1Affine>,
     
     pub b_g1: Vec<E::G1Affine>,
     pub b_g2: Vec<E::G2Affine>,
@@ -64,6 +64,11 @@ pub struct QAP<S: PrimeField> {
     pub a: Vec<(usize, Vec<(S, usize)>)>,
     pub b: Vec<(usize, Vec<(S, usize)>)>,
     pub c: Vec<(usize, Vec<(S, usize)>)>,
+
+    // Sorted array of variable indices for which 
+    // constraint polynomials are non zero
+    pub a_constraints: Vec<usize>,
+    pub b_constraints: Vec<usize>
 }
 
 #[cfg(any(test, feature = "std"))]
@@ -100,8 +105,10 @@ pub mod assignments {
 
         // Only call after synthesize
         pub fn qap(self) -> QAP<S> {
-            fn collect<S: PrimeField>(v: Vec<(Index, S, usize)>, p: usize) -> Vec<(usize, Vec<(S, usize)>)> {
+            fn collect<S: PrimeField>(v: Vec<(Index, S, usize)>, p: usize) -> (Vec<(usize, Vec<(S, usize)>)>, Vec<usize>) {
+                let mut constraints: Vec<usize> = Vec::new();
                 let mut map: HashMap<usize, Vec<(S, usize)>> = HashMap::new();
+
                 for (var, coeff, constraint) in v.into_iter() {
                     let i = match var {
                         Index::Input(i) => i,
@@ -113,18 +120,29 @@ pub mod assignments {
                             constraints.push((coeff, constraint));
                         },
 
-                        None => { 
+                        None => {
+                            constraints.push(i);
                             map.insert(i, vec![(coeff, constraint)]);
                         },
                     }
-                } 
-                map.into_iter().collect()
+                }
+                constraints.sort();
+
+                (map.into_iter().collect(), constraints)
             }
 
+            let (a, a_constraints) = collect(self.at, self.num_inputs);
+            let (b, b_constraints) = collect(self.bt, self.num_inputs);
+            let (c, _) = collect(self.ct, self.num_inputs);
+
+
             QAP {
-                a: collect(self.at, self.num_inputs),
-                b: collect(self.bt, self.num_inputs),
-                c: collect(self.ct, self.num_inputs),
+                a,
+                b,
+                c,
+
+                a_constraints,
+                b_constraints
             }
         }
 

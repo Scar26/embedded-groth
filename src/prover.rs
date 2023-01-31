@@ -87,17 +87,21 @@ pub fn create_proof<E: Engine>(
         .zip(aux.iter())
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
 
-    let at_g1 = params.a.iter()
-        .zip(inputs.iter().chain(aux.iter()))
-        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+    let augmented_inputs: Vec<&E::Fr> = inputs.iter().chain(aux.iter()).collect();
 
+    assert_eq!(params.a_g1.len(), qap.a_constraints.len());
+    let at_g1 = params.a_g1.iter()
+        .zip(qap.a_constraints.iter())
+        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
+
+    assert_eq!(params.b_g1.len(), qap.b_constraints.len());
     let bt_g1 = params.b_g1.iter()
-        .zip(inputs.iter().chain(aux.iter()))
-        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+        .zip(qap.b_constraints.iter())
+        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
     
     let bt_g2 = params.b_g2.iter()
-        .zip(inputs.iter().chain(aux.iter()))
-        .fold(E::G2::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+        .zip(qap.b_constraints.iter())
+        .fold(E::G2::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
 
     let mut a = E::G1::identity();
     a.add_assign(params.vk.alpha_g1);
