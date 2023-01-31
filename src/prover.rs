@@ -1,4 +1,4 @@
-use core::ops::{SubAssign, MulAssign, AddAssign, Mul};
+use core::ops::{SubAssign, MulAssign, AddAssign, Mul, Add};
 
 use pairing::Engine;
 use pairing::group::Group;
@@ -14,8 +14,8 @@ pub fn create_proof<E: Engine>(
     params: Parameters<E>,
     inputs: &[E::Fr],
     aux: &[E::Fr],
-    _r: E::Fr,
-    _s: E::Fr,
+    r: E::Fr,
+    s: E::Fr,
     qap: QAP<E::Fr>,
     num_constraints: usize
 ) -> Result<Proof<E>, ProvingError>
@@ -82,5 +82,36 @@ pub fn create_proof<E: Engine>(
         acc
     };
 
-    unimplemented!()
+    assert_eq!(aux.len(), params.l.len());
+    let l = params.l.iter()
+        .zip(aux.iter())
+        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+
+    let at_g1 = params.a.iter()
+        .zip(inputs.iter().chain(aux.iter()))
+        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+
+    let bt_g1 = params.b_g1.iter()
+        .zip(inputs.iter().chain(aux.iter()))
+        .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+    
+    let bt_g2 = params.b_g2.iter()
+        .zip(inputs.iter().chain(aux.iter()))
+        .fold(E::G2::identity(), |acc, (x, y)| acc.add(x.mul(y)));
+
+    let mut a = E::G1::identity();
+    a.add_assign(params.vk.alpha_g1);
+    a.add_assign(at_g1);
+    a.add_assign(params.vk.delta_g1.mul(r));
+
+    let mut b = E::G2::identity();
+    b.add_assign(params.vk.beta_g2);
+    b.add_assign(bt_g2);
+    b.add_assign(params.vk.delta_g2.mul(s));
+    
+    let a_affine: E::G1Affine = a.into();
+    let b_affine: E::G2Affine = b.into();
+
+    println!("groth A, B: {:?}, {:?}", a_affine, b_affine);
+    unimplemented!();
 }

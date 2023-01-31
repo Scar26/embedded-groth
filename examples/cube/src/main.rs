@@ -4,7 +4,7 @@ use bellman;
 
 // For randomness (during paramgen and proof generation)
 use rand::{thread_rng, Rng};
-use groth16::{ prover, assignments };
+use groth16::{ prover, assignments, Parameters as GrothParams };
 use std::sync::Arc;
 
 // Bring in some tools for using pairing-friendly curves

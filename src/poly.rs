@@ -155,7 +155,7 @@ mod tests {
         let mut x: Vec<BlsScalar> = domain.as_ref().iter().map(|t| t.0).collect();
 
         // fft with local functions
-        let (omega, m, exp): (BlsScalar, usize, u32) = fft_params(a.len());
+        let (omega, _, exp): (BlsScalar, usize, u32) = fft_params(a.len());
         fft(a2.as_mut_slice(), &omega, exp);
 
         // FFT outputs match up with the bellman evaluation domain

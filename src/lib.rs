@@ -24,7 +24,7 @@ pub struct Proof<E: Engine> {
     pub b: E::G2Affine,
     pub c: E::G1Affine,
 }
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct VerificationKey<E: Engine> {
     pub alpha_g1: E::G1Affine,
 
@@ -41,7 +41,7 @@ pub struct VerificationKey<E: Engine> {
     pub ic: Vec<E::G1Affine>
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Parameters<E: Engine> {
     pub vk: VerificationKey<E>,
 
