@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bellman = { version = "0.13.0" }
+# bellman = { version = "0.13.0" }
+bellman = { path = "../../../bellman" }
 rand = "0.8"
 groth16 = { path = "../../", features = ["std"] }
 ff = "0.12"

@@ -72,7 +72,7 @@ pub fn ifft<S: PrimeField>(a: &mut [S], omega: &S, exp: u32) {
 
 // First argument is modified in place to the multiplication result
 // Second argument is modified in place to the evaluation domain
-pub fn multiply_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>) {
+pub fn mul_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>) {
     let (omega, m, exp): (S, usize, u32) = fft_params(a.len() + b.len());
     a.resize(m, S::zero());
     b.resize(m, S::zero());
@@ -84,11 +84,47 @@ pub fn multiply_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>
     }
 }
 
-// First argument is modified in place to the addition result
-pub fn add_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &Vec<S>) {
+pub fn sub_eval_domain<S: PrimeField>(a: &mut Vec<S>, b: Vec<S>) {
     assert_eq!(a.len(), b.len());
     for (x, y) in a.iter_mut().zip(b.iter()) {
-        x.add_assign(y);
+        x.sub_assign(y);
+    }
+}
+
+pub fn coset_fft<S: PrimeField>(a: &mut [S], omega: &S, exp: u32) {
+    let g = S::multiplicative_generator();
+    let mut u = S::one();
+    for x in a.iter_mut() {
+        x.mul_assign(&u);
+        u.mul_assign(&g);
+    }
+    fft(a, omega, exp)
+}
+
+pub fn icoset_fft<S: PrimeField>(a: &mut [S], omega: &S, exp: u32) {
+    ifft(a, omega, exp);
+    let g = S::multiplicative_generator().invert().unwrap();
+    let mut u = S::one();
+    for x in a.iter_mut() {
+        x.mul_assign(&u);
+        u.mul_assign(&g);
+    }
+}
+
+pub fn coset_mul_assign<S: PrimeField>(a: &mut Vec<S>, mut b: Vec<S>) {
+    // let (omega, m, exp): (S, usize, u32) = fft_params(a.len() + b.len());
+    // a.resize(m, S::zero());
+    // b.resize(m, S::zero());
+    assert_eq!(a.len(), b.len());
+    let (omega, _, exp): (S, usize, u32) = fft_params(a.len());
+    ifft(a.as_mut_slice(), &omega, exp);
+    ifft(b.as_mut_slice(), &omega, exp);
+
+    coset_fft(a.as_mut_slice(), &omega, exp);
+    coset_fft(b.as_mut_slice(), &omega, exp);
+
+    for (x, y) in a.iter_mut().zip(b.iter()) {
+        x.mul_assign(y);
     }
 }
 
@@ -152,7 +188,7 @@ mod tests {
             }
         }
 
-        multiply_coefficient_domain(&mut a, &mut b);
+        mul_coefficient_domain(&mut a, &mut b);
         let (omega, _, exp): (BlsScalar, usize, u32) = fft_params(a.len());
         ifft(&mut a, &omega, exp);
 

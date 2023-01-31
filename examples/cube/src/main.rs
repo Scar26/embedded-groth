@@ -4,13 +4,13 @@ use bellman;
 
 // For randomness (during paramgen and proof generation)
 use rand::{thread_rng, Rng};
-use groth16::assignments;
-
+use groth16::{ prover, assignments };
+use std::sync::Arc;
 
 // Bring in some tools for using pairing-friendly curves
 use pairing::Engine;
 
-use ff::PrimeField;
+use ff::{ Field, PrimeField };
 
 // We're going to use the BLS12-381 pairing-friendly elliptic curve.
 use bls12_381::{ Bls12, Scalar };
@@ -120,7 +120,7 @@ impl<S: PrimeField> Circuit<S> for CubeDemo<S> {
 fn main(){
     // This may not be cryptographically safe, use
     // `OsRng` (for example) in production software.
-    let rng = &mut thread_rng();
+    let mut rng = thread_rng();
     
     println!("Creating parameters...");
     
@@ -130,7 +130,7 @@ fn main(){
             x: None
         };
 
-        generate_random_parameters::<Bls12, _, _>(c, rng).unwrap()
+        generate_random_parameters::<Bls12, _, _>(c, &mut rng).unwrap()
     };
 
     println!("params 1: {}, {}, {}, {}, {}", params.l.len(), params.h.len(), params.a.len(), params.b_g1.len(), params.b_g2.len());
@@ -145,31 +145,45 @@ fn main(){
     };
 
     let assignments = assignments::extract_assignments::<CubeDemo<Scalar>, Bls12>(c).unwrap();
+    let (inputsassign, auxassign) = assignments.get_assignments();
+    let m = assignments.num_constraints();
     let cap = assignments.qap();
+    let r = Scalar::random(&mut rng);
+    let s = Scalar::random(&mut rng);
 
-    for (i, p) in cap.a.iter() {
-        println!("{} {:?}", i, p);
-    }
+    let _bellproof = create_random_proof(c, &params, &mut rng).unwrap();
+    let p =  {
+        if let Ok(p) = Arc::try_unwrap(params.h) {
+            p
+        } else {
+            unreachable!()
+        }
+    };
+    let h: <Bls12 as Engine>::G1 = prover::create_proof::<Bls12>(p, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
+    let t: <Bls12 as Engine>::G1Affine = h.into();
+    println!("groth16 h: {:?}", t);
+    // for (i, p) in cap.a.iter() {
+    //     println!("{} {:?}", i, p);
+    // }
 
-    for (i, p) in cap.b.iter() {
-        println!("{} {:?}", i, p);
-    }
+    // for (i, p) in cap.b.iter() {
+    //     println!("{} {:?}", i, p);
+    // }
 
-    for (i, p) in cap.c.iter() {
-        println!("{} {:?}", i, p);
-    }
+    // for (i, p) in cap.c.iter() {
+    //     println!("{} {:?}", i, p);
+    // }
     // Create a groth16 proof with our parameters.
-    let proof = create_random_proof(c, &params, rng).unwrap();
         
-    if let Ok(_) = verify_proof(
-        &pvk,
-        &proof,
-        &[Scalar::from_str_vartime("35").unwrap()]
-    ) {
-        println!("proof verified")
-    } else {
-        println!("verification failed")
-    }
+    // if let Ok(_) = verify_proof(
+    //     &pvk,
+    //     &proof,
+    //     &[Scalar::from_str_vartime("35").unwrap()]
+    // ) {
+    //     println!("proof verified")
+    // } else {
+    //     println!("verification failed")
+    // }
 
 
 }

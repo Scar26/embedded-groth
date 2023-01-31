@@ -59,9 +59,6 @@ pub struct Parameters<E: Engine> {
     pub b_g2: Vec<E::G2Affine>,
 }
 
-/// The first index is not really needed since bellman doesn't allow
-/// unconstrained variables but it's included just for cleanliness and 
-/// potential multi threaded speedups
 #[derive(Default, Debug, Clone)]
 pub struct QAP<S: PrimeField> {
     pub a: Vec<(usize, Vec<(S, usize)>)>,
@@ -91,6 +88,10 @@ pub mod assignments {
     impl<S: PrimeField> AnalyzeCircuit<S> {
         pub fn get_num_states(&self) -> (usize, usize) {
             (self.num_inputs, self.num_aux)
+        }
+
+        pub fn num_constraints(&self) -> usize {
+            self.num_constraints
         }
 
         pub fn get_assignments(&self) -> (Vec<S>, Vec<S>) {
@@ -172,7 +173,7 @@ pub mod assignments {
                 self.input_assignment.push(f()?);
             }
             self.num_inputs += 1;
-            Ok(Variable::new_unchecked(Index::Aux(self.num_inputs - 1)))
+            Ok(Variable::new_unchecked(Index::Input(self.num_inputs - 1)))
         }
 
         fn enforce<A, AR, LA, LB, LC>(&mut self, _: A, a: LA, b: LB, c: LC)
@@ -250,25 +251,7 @@ pub mod assignments {
             cs.enforce(|| "", |lc| lc + Variable::new_unchecked(Index::Input(i)), |lc| lc, |lc| lc);
         }
 
-        Ok(QAP { a: vec![], b: vec![], c: vec![] })
+        Ok(cs.qap())
     }
 }
 
-
-#[cfg(test)]
-mod tests {
-    use super::assignments;
-    use bls12_381::{ Scalar as BlsScalar };
-
-    // #[test]
-    // fn test() {
-    //     let a = assignments::AnalyzeCircuit::<Scalar>::default();
-    //     println!("{}", mem::size_of_val(&a));
-    // }
-
-    #[test]
-    fn qap_extraction() {
-        let a = assignments::AnalyzeCircuit::<BlsScalar>::default();
-
-    }
-}
