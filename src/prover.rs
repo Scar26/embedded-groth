@@ -8,8 +8,6 @@ use ff::{Field, PrimeField};
 #[cfg(not(any(test, feature = "std")))]
 use alloc::vec::Vec;
 
-pub struct ProvingError {}
-
 pub fn create_proof<E: Engine>(
     params: Parameters<E>,
     inputs: &[E::Fr],
@@ -18,7 +16,7 @@ pub fn create_proof<E: Engine>(
     s: E::Fr,
     qap: QAP<E::Fr>,
     num_constraints: usize
-) -> Result<Proof<E>, ProvingError>
+) -> Proof<E>
 {
 
     fn eval<S: PrimeField>(
@@ -43,7 +41,7 @@ pub fn create_proof<E: Engine>(
         }
     }
 
-    let h = {
+    let _h = {
         let (omega, m, exp): (E::Fr, usize, u32) = fft_params(num_constraints);
         let mut at = vec![E::Fr::zero(); m];
         let mut bt = vec![E::Fr::zero(); m];
@@ -83,7 +81,7 @@ pub fn create_proof<E: Engine>(
     };
 
     assert_eq!(aux.len(), params.l.len());
-    let l = params.l.iter()
+    let _l = params.l.iter()
         .zip(aux.iter())
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
 
@@ -95,7 +93,7 @@ pub fn create_proof<E: Engine>(
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
 
     assert_eq!(params.b_g1.len(), qap.b_constraints.len());
-    let bt_g1 = params.b_g1.iter()
+    let _bt_g1 = params.b_g1.iter()
         .zip(qap.b_constraints.iter())
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
     

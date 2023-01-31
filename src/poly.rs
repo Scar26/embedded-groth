@@ -70,20 +70,6 @@ pub fn ifft<S: PrimeField>(a: &mut [S], omega: &S, exp: u32) {
     }
 }
 
-// First argument is modified in place to the multiplication result
-// Second argument is modified in place to the evaluation domain
-pub fn mul_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>) {
-    let (omega, m, exp): (S, usize, u32) = fft_params(a.len() + b.len());
-    a.resize(m, S::zero());
-    b.resize(m, S::zero());
-    fft(a.as_mut_slice(), &omega, exp);
-    fft(b.as_mut_slice(), &omega, exp);
-
-    for (x, y) in a.iter_mut().zip(b.iter()) {
-        x.mul_assign(y);
-    }
-}
-
 pub fn sub_eval_domain<S: PrimeField>(a: &mut Vec<S>, b: Vec<S>) {
     assert_eq!(a.len(), b.len());
     for (x, y) in a.iter_mut().zip(b.iter()) {
@@ -140,6 +126,18 @@ mod tests {
 
 
     use super::*;
+
+    pub fn mul_coefficient_domain<S: PrimeField>(a: &mut Vec<S>, b: &mut Vec<S>) {
+        let (omega, m, exp): (S, usize, u32) = fft_params(a.len() + b.len());
+        a.resize(m, S::zero());
+        b.resize(m, S::zero());
+        fft(a.as_mut_slice(), &omega, exp);
+        fft(b.as_mut_slice(), &omega, exp);
+    
+        for (x, y) in a.iter_mut().zip(b.iter()) {
+            x.mul_assign(y);
+        }
+    }
 
     #[test]
     fn inverse_correctness() {
