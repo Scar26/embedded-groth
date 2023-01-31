@@ -211,7 +211,8 @@ fn main(){
         b_g2,
     };
 
-    let h = prover::create_proof::<Bls12>(grothparams, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
+    let grothproof = prover::create_proof::<Bls12>(grothparams, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
+    println!("groth proof: {:?}", grothproof);
     // let t: <Bls12 as Engine>::G1Affine = h.into();
     // println!("groth16 h: {:?}", t);
     // for (i, p) in cap.a.iter() {

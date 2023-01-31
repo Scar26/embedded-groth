@@ -41,7 +41,7 @@ pub fn create_proof<E: Engine>(
         }
     }
 
-    let _h = {
+    let h = {
         let (omega, m, exp): (E::Fr, usize, u32) = fft_params(num_constraints);
         let mut at = vec![E::Fr::zero(); m];
         let mut bt = vec![E::Fr::zero(); m];
@@ -81,7 +81,7 @@ pub fn create_proof<E: Engine>(
     };
 
     assert_eq!(aux.len(), params.l.len());
-    let _l = params.l.iter()
+    let l = params.l.iter()
         .zip(aux.iter())
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(y)));
 
@@ -93,7 +93,7 @@ pub fn create_proof<E: Engine>(
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
 
     assert_eq!(params.b_g1.len(), qap.b_constraints.len());
-    let _bt_g1 = params.b_g1.iter()
+    let bt_g1 = params.b_g1.iter()
         .zip(qap.b_constraints.iter())
         .fold(E::G1::identity(), |acc, (x, y)| acc.add(x.mul(augmented_inputs[*y])));
     
@@ -110,10 +110,21 @@ pub fn create_proof<E: Engine>(
     b.add_assign(params.vk.beta_g2);
     b.add_assign(bt_g2);
     b.add_assign(params.vk.delta_g2.mul(s));
-    
-    let a_affine: E::G1Affine = a.into();
-    let b_affine: E::G2Affine = b.into();
 
-    println!("groth A, B: {:?}, {:?}", a_affine, b_affine);
-    unimplemented!();
+    let mut c = E::G1::identity();
+    c.add_assign(bt_g1);
+    c.add_assign(params.vk.delta_g1.mul(s));
+    c.add_assign(params.vk.beta_g1);
+    c.mul_assign(r);
+    c.add_assign(h);
+    c.add_assign(l);
+    c.add_assign(a.mul(s));
+    c.sub_assign(params.vk.delta_g1.mul(r.mul(s)));
+    
+    
+    Proof {
+        a: a.into(),
+        b: b.into(),
+        c: c.into(),
+    }
 }
