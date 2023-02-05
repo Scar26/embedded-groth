@@ -75,7 +75,9 @@ pub struct QAP<S: PrimeField> {
 pub mod assignments {
     use std::collections::HashMap;
     use bellman::{ConstraintSystem, LinearCombination, SynthesisError, Variable, Index, Circuit};
+    use bellman::groth16::{Parameters as BellmanParams};
     use pairing::group::ff::{ Field, PrimeField };
+    use std::sync::Arc;
     use super::*;
     #[derive(Default, Debug)]
     pub struct AnalyzeCircuit<S: PrimeField> {
@@ -270,6 +272,67 @@ pub mod assignments {
         }
 
         Ok(cs.qap())
+    }
+
+    pub fn create_params<E: Engine>(params: BellmanParams<E>) -> Parameters<E> {
+        let h =  {
+            if let Ok(p) = Arc::try_unwrap(params.h) {
+                p
+            } else {
+                unreachable!()
+            }
+        };
+    
+        let l =  {
+            if let Ok(p) = Arc::try_unwrap(params.l) {
+                p
+            } else {
+                unreachable!()
+            }
+        };
+    
+        let a_g1 =  {
+            if let Ok(p) = Arc::try_unwrap(params.a) {
+                p
+            } else {
+                unreachable!()
+            }
+        };
+    
+        let b_g1 =  {
+            if let Ok(p) = Arc::try_unwrap(params.b_g1) {
+                p
+            } else {
+                unreachable!()
+            }
+        };
+    
+        let b_g2 =  {
+            if let Ok(p) = Arc::try_unwrap(params.b_g2) {
+                p
+            } else {
+                unreachable!()
+            }
+        };
+    
+        let grothparams = Parameters{
+            vk: VerificationKey {
+                alpha_g1: params.vk.alpha_g1,
+                beta_g1: params.vk.beta_g1,
+                beta_g2: params.vk.beta_g2,
+                gamma_g2: params.vk.gamma_g2,
+                delta_g1: params.vk.delta_g1,
+                delta_g2: params.vk.delta_g2,
+                ic: params.vk.ic,
+            },
+            h,
+            l,
+            a_g1,
+            b_g1,
+            b_g2,
+        };
+
+        grothparams
     }
 }
 
