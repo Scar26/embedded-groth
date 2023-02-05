@@ -24,7 +24,7 @@ use self::bellman::{
 
 // We're going to use the Groth16 proving system.
 use self::bellman::groth16::{
-    Proof,
+    Proof as BellmanProof,
     generate_random_parameters,
     prepare_verifying_key,
     create_proof,
@@ -157,4 +157,11 @@ fn main(){
     let grothparams = assignments::create_params(params);
     let grothproof = prover::create_proof::<Bls12>(grothparams, inputsassign.as_ref(), auxassign.as_ref(), r, s, cap, m);
     println!("groth proof: {:?}", grothproof);
+    let g2bproof = BellmanProof {
+        a: grothproof.a.clone(),
+        b: grothproof.b.clone(),
+        c: grothproof.c.clone(),
+    };
+
+    verify_proof(&pvk, &g2bproof, &inputsassign[1..]).unwrap();
 }
